@@ -159,7 +159,10 @@ export const fetchAssets = async (
   keywords: string[],
   session_id?: string,
 ): Promise<StatusResponse<AssetsData>> => {
-  const { data } = await apiLong.post("/assets/fetch", { keywords, session_id });
+  const { data } = await apiLong.post("/assets/fetch", {
+    keywords,
+    session_id,
+  });
   return data;
 };
 
@@ -167,16 +170,18 @@ export const downloadSingleAsset = async (
   keyword: string,
   source: string = "pexels",
   session_id?: string,
-): Promise<StatusResponse<{
-  keyword: string;
-  source: string;
-  asset: {
-    path: string;
+): Promise<
+  StatusResponse<{
+    keyword: string;
     source: string;
-    original_url: string;
-    duration: number;
-  };
-}>> => {
+    asset: {
+      path: string;
+      source: string;
+      original_url: string;
+      duration: number;
+    };
+  }>
+> => {
   const { data } = await apiLong.post("/assets/download-single", null, {
     params: { keyword, source, session_id },
   });

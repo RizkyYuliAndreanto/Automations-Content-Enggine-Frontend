@@ -27,17 +27,24 @@ export function LLMPanel({ inputContent, onScriptGenerated }: LLMPanelProps) {
   const [error, setError] = useState<string | null>(null);
 
   // Update a segment field
-  const updateSegment = (index: number, field: 'text' | 'visual_keyword' | 'duration_estimate', value: string | number) => {
+  const updateSegment = (
+    index: number,
+    field: "text" | "visual_keyword" | "duration_estimate",
+    value: string | number,
+  ) => {
     if (!script) return;
     const updatedSegments = [...script.segments];
     updatedSegments[index] = {
       ...updatedSegments[index],
-      [field]: field === 'duration_estimate' ? Number(value) : value,
+      [field]: field === "duration_estimate" ? Number(value) : value,
     };
     const updatedScript: VideoScript = {
       ...script,
       segments: updatedSegments,
-      total_duration: updatedSegments.reduce((sum, s) => sum + s.duration_estimate, 0),
+      total_duration: updatedSegments.reduce(
+        (sum, s) => sum + s.duration_estimate,
+        0,
+      ),
     };
     setScript(updatedScript);
     onScriptGenerated?.(updatedScript);
@@ -231,14 +238,22 @@ export function LLMPanel({ inputContent, onScriptGenerated }: LLMPanelProps) {
                       <div className="flex gap-2 items-center">
                         <Input
                           value={seg.visual_keyword}
-                          onChange={(e) => updateSegment(i, 'visual_keyword', e.target.value)}
+                          onChange={(e) =>
+                            updateSegment(i, "visual_keyword", e.target.value)
+                          }
                           className="w-32 text-xs"
                           placeholder="Visual keyword"
                         />
                         <Input
                           type="number"
                           value={seg.duration_estimate}
-                          onChange={(e) => updateSegment(i, 'duration_estimate', e.target.value)}
+                          onChange={(e) =>
+                            updateSegment(
+                              i,
+                              "duration_estimate",
+                              e.target.value,
+                            )
+                          }
                           className="w-16 text-xs"
                           min={1}
                           step={0.5}
@@ -248,7 +263,7 @@ export function LLMPanel({ inputContent, onScriptGenerated }: LLMPanelProps) {
                     </div>
                     <TextArea
                       value={seg.text}
-                      onChange={(e) => updateSegment(i, 'text', e.target.value)}
+                      onChange={(e) => updateSegment(i, "text", e.target.value)}
                       rows={2}
                       className="text-sm"
                       placeholder="Teks narasi untuk segment ini..."
@@ -259,7 +274,8 @@ export function LLMPanel({ inputContent, onScriptGenerated }: LLMPanelProps) {
 
               <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs text-yellow-300">
                 <Edit3 className="w-3 h-3 inline mr-1" />
-                Anda dapat langsung edit teks, visual keyword, dan durasi setiap segment di atas.
+                Anda dapat langsung edit teks, visual keyword, dan durasi setiap
+                segment di atas.
               </div>
             </div>
           )}

@@ -10,7 +10,12 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Card, Button, Input, Select, Badge, StatusIndicator } from "../ui";
-import { getAssetsStatus, searchAssets, fetchAssets, downloadSingleAsset } from "../../api";
+import {
+  getAssetsStatus,
+  searchAssets,
+  fetchAssets,
+  downloadSingleAsset,
+} from "../../api";
 import type { AssetsData, VideoScript } from "../../types";
 
 interface AssetsPanelProps {
@@ -68,10 +73,18 @@ export function AssetsPanel({
   > | null>(null);
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [keywords, setKeywords] = useState<string[]>([]);
-  const [keywordSources, setKeywordSources] = useState<Record<string, string>>({});
-  const [keywordPreviews, setKeywordPreviews] = useState<Record<string, PreviewData>>({});
-  const [downloadedAssets, setDownloadedAssets] = useState<DownloadedAsset[]>([]);
-  const [downloadingKeyword, setDownloadingKeyword] = useState<string | null>(null);
+  const [keywordSources, setKeywordSources] = useState<Record<string, string>>(
+    {},
+  );
+  const [keywordPreviews, setKeywordPreviews] = useState<
+    Record<string, PreviewData>
+  >({});
+  const [downloadedAssets, setDownloadedAssets] = useState<DownloadedAsset[]>(
+    [],
+  );
+  const [downloadingKeyword, setDownloadingKeyword] = useState<string | null>(
+    null,
+  );
   const [searchingKeyword, setSearchingKeyword] = useState<string | null>(null);
   const [assetsData, setAssetsData] = useState<AssetsData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +132,7 @@ export function AssetsPanel({
           setPreviewData({
             keyword: res.data.keyword,
             source: res.data.source,
-            preview: res.data.preview as PreviewData['preview'],
+            preview: res.data.preview as PreviewData["preview"],
           });
         } else {
           setPreviewData(null);
@@ -144,17 +157,21 @@ export function AssetsPanel({
     try {
       const res = await searchAssets(keyword, source);
       if (res.status === "ok" && res.data && res.data.preview) {
-        setKeywordPreviews(prev => ({
+        setKeywordPreviews((prev) => ({
           ...prev,
           [keyword]: {
             keyword: res.data!.keyword,
             source: res.data!.source,
-            preview: res.data!.preview as PreviewData['preview'],
-          }
+            preview: res.data!.preview as PreviewData["preview"],
+          },
         }));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Gagal mencari preview untuk ${keyword}`);
+      setError(
+        err instanceof Error
+          ? err.message
+          : `Gagal mencari preview untuk ${keyword}`,
+      );
     } finally {
       setSearchingKeyword(null);
     }
@@ -174,11 +191,11 @@ export function AssetsPanel({
           path: res.data.asset.path,
           duration: res.data.asset.duration,
         };
-        setDownloadedAssets(prev => [...prev, newAsset]);
-        
+        setDownloadedAssets((prev) => [...prev, newAsset]);
+
         // Update assetsData for step progression
         const updatedAssetsData: AssetsData = {
-          assets: [...downloadedAssets, newAsset].map(a => ({
+          assets: [...downloadedAssets, newAsset].map((a) => ({
             keyword: a.keyword,
             source: a.source,
             file_path: a.path,
@@ -194,7 +211,9 @@ export function AssetsPanel({
         setError(res.message);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Gagal download ${keyword}`);
+      setError(
+        err instanceof Error ? err.message : `Gagal download ${keyword}`,
+      );
     } finally {
       setDownloadingKeyword(null);
     }
@@ -232,9 +251,14 @@ export function AssetsPanel({
         </h4>
         <p className="text-sm text-gray-400">
           Pilih sumber video untuk setiap keyword:
-          <span className="text-yellow-300"> Pexels, Pixabay, YouTube, NASA, Wikimedia,</span> atau
-          <span className="text-yellow-300"> Internet Archive</span>. 
-          Klik Preview untuk melihat video sebelum download, lalu Download satu per satu.
+          <span className="text-yellow-300">
+            {" "}
+            Pexels, Pixabay, YouTube, NASA, Wikimedia,
+          </span>{" "}
+          atau
+          <span className="text-yellow-300"> Internet Archive</span>. Klik
+          Preview untuk melihat video sebelum download, lalu Download satu per
+          satu.
         </p>
       </div>
 
@@ -353,38 +377,46 @@ export function AssetsPanel({
                     Video ditemukan!
                   </span>
                 </div>
-                
+
                 {/* Preview with Thumbnail */}
                 {previewData && (
                   <div className="mb-3 p-3 bg-gray-800/50 rounded-lg">
                     <div className="flex gap-4">
                       {previewData.preview.thumbnail && (
                         <div className="flex-shrink-0">
-                          <img 
-                            src={previewData.preview.thumbnail} 
+                          <img
+                            src={previewData.preview.thumbnail}
                             alt={previewData.preview.title}
                             className="w-32 h-20 object-cover rounded"
                           />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white font-medium truncate">{previewData.preview.title}</p>
+                        <p className="text-sm text-white font-medium truncate">
+                          {previewData.preview.title}
+                        </p>
                         <div className="flex flex-wrap gap-2 mt-1">
-                          <Badge variant="info" size="sm">{previewData.source}</Badge>
+                          <Badge variant="info" size="sm">
+                            {previewData.source}
+                          </Badge>
                           {previewData.preview.duration > 0 && (
-                            <Badge variant="default" size="sm">{previewData.preview.duration.toFixed(1)}s</Badge>
+                            <Badge variant="default" size="sm">
+                              {previewData.preview.duration.toFixed(1)}s
+                            </Badge>
                           )}
                           {previewData.preview.width > 0 && (
-                            <Badge variant="default" size="sm">{previewData.preview.width}x{previewData.preview.height}</Badge>
+                            <Badge variant="default" size="sm">
+                              {previewData.preview.width}x
+                              {previewData.preview.height}
+                            </Badge>
                           )}
                         </div>
                         {previewData.preview.url && (
-                          <a 
-                            href={previewData.preview.url} 
-                            target="_blank" 
+                          <a
+                            href={previewData.preview.url}
+                            target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 mt-2 text-xs text-blue-400 hover:text-blue-300"
-                          >
+                            className="inline-flex items-center gap-1 mt-2 text-xs text-blue-400 hover:text-blue-300">
                             <ExternalLink className="w-3 h-3" />
                             Lihat di sumber
                           </a>
@@ -395,7 +427,9 @@ export function AssetsPanel({
                 )}
 
                 <details className="text-xs">
-                  <summary className="text-gray-400 cursor-pointer hover:text-gray-300">Lihat metadata lengkap</summary>
+                  <summary className="text-gray-400 cursor-pointer hover:text-gray-300">
+                    Lihat metadata lengkap
+                  </summary>
                   <pre className="mt-2 text-gray-400 overflow-x-auto">
                     {JSON.stringify(searchResult, null, 2)}
                   </pre>
@@ -411,27 +445,41 @@ export function AssetsPanel({
                 <h4 className="text-sm font-medium text-gray-300">
                   Download Video per Keyword (Manual Mode)
                 </h4>
-                <Badge variant="info">{keywords.length} keyword | {downloadedAssets.length} downloaded</Badge>
+                <Badge variant="info">
+                  {keywords.length} keyword | {downloadedAssets.length}{" "}
+                  downloaded
+                </Badge>
               </div>
-              
+
               {/* Individual Keyword Controls */}
               <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
                 {keywords.map((kw, i) => {
                   const preview = keywordPreviews[kw];
-                  const isDownloaded = downloadedAssets.some(a => a.keyword === kw);
+                  const isDownloaded = downloadedAssets.some(
+                    (a) => a.keyword === kw,
+                  );
                   const isSearching = searchingKeyword === kw;
                   const isDownloading = downloadingKeyword === kw;
-                  
+
                   return (
-                    <div key={i} className={`p-3 rounded-lg border ${isDownloaded ? 'bg-green-500/10 border-green-500/30' : 'bg-gray-900/50 border-gray-600'}`}>
+                    <div
+                      key={i}
+                      className={`p-3 rounded-lg border ${isDownloaded ? "bg-green-500/10 border-green-500/30" : "bg-gray-900/50 border-gray-600"}`}>
                       <div className="flex items-center gap-2 mb-2">
-                        <Badge variant={isDownloaded ? "success" : "default"} size="sm">
+                        <Badge
+                          variant={isDownloaded ? "success" : "default"}
+                          size="sm">
                           {isDownloaded ? "✓" : "🎬"} {kw}
                         </Badge>
                         <Select
                           options={VIDEO_SOURCES}
                           value={keywordSources[kw] || "pexels"}
-                          onChange={(e) => setKeywordSources(prev => ({ ...prev, [kw]: e.target.value }))}
+                          onChange={(e) =>
+                            setKeywordSources((prev) => ({
+                              ...prev,
+                              [kw]: e.target.value,
+                            }))
+                          }
                           className="w-32 text-xs"
                           disabled={isDownloaded}
                         />
@@ -441,8 +489,7 @@ export function AssetsPanel({
                           onClick={() => handleSearchKeywordPreview(kw)}
                           loading={isSearching}
                           disabled={isDownloaded}
-                          icon={<Search className="w-3 h-3" />}
-                        >
+                          icon={<Search className="w-3 h-3" />}>
                           Preview
                         </Button>
                         <Button
@@ -451,37 +498,41 @@ export function AssetsPanel({
                           onClick={() => handleDownloadSingle(kw)}
                           loading={isDownloading}
                           disabled={isDownloaded}
-                          icon={<Download className="w-3 h-3" />}
-                        >
+                          icon={<Download className="w-3 h-3" />}>
                           {isDownloaded ? "Downloaded" : "Download"}
                         </Button>
                       </div>
-                      
+
                       {/* Preview Thumbnail */}
                       {preview && !isDownloaded && (
                         <div className="flex gap-3 mt-2 p-2 bg-gray-800/50 rounded">
                           {preview.preview.thumbnail && (
-                            <img 
-                              src={preview.preview.thumbnail} 
+                            <img
+                              src={preview.preview.thumbnail}
                               alt={preview.preview.title}
                               className="w-24 h-16 object-cover rounded flex-shrink-0"
                             />
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-white truncate">{preview.preview.title}</p>
+                            <p className="text-xs text-white truncate">
+                              {preview.preview.title}
+                            </p>
                             <div className="flex gap-1 mt-1">
-                              <Badge variant="info" size="sm">{preview.source}</Badge>
+                              <Badge variant="info" size="sm">
+                                {preview.source}
+                              </Badge>
                               {preview.preview.duration > 0 && (
-                                <Badge variant="default" size="sm">{preview.preview.duration.toFixed(1)}s</Badge>
+                                <Badge variant="default" size="sm">
+                                  {preview.preview.duration.toFixed(1)}s
+                                </Badge>
                               )}
                             </div>
                             {preview.preview.url && (
-                              <a 
-                                href={preview.preview.url} 
-                                target="_blank" 
+                              <a
+                                href={preview.preview.url}
+                                target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 mt-1 text-xs text-blue-400 hover:text-blue-300"
-                              >
+                                className="inline-flex items-center gap-1 mt-1 text-xs text-blue-400 hover:text-blue-300">
                                 <ExternalLink className="w-3 h-3" />
                                 Lihat
                               </a>
@@ -500,13 +551,15 @@ export function AssetsPanel({
                   loading={loading}
                   disabled={!pexelsAvailable && !pixabayAvailable}
                   icon={<Download className="w-4 h-4" />}
-                  variant="secondary"
-                >
+                  variant="secondary">
                   Download Semua (Auto)
                 </Button>
-                {downloadedAssets.length === keywords.length && downloadedAssets.length > 0 && (
-                  <Badge variant="success">Semua video sudah di-download!</Badge>
-                )}
+                {downloadedAssets.length === keywords.length &&
+                  downloadedAssets.length > 0 && (
+                    <Badge variant="success">
+                      Semua video sudah di-download!
+                    </Badge>
+                  )}
               </div>
             </div>
           )}

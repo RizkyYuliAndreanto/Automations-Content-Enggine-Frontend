@@ -84,7 +84,7 @@ function App() {
   );
   const [audioData, setAudioData] = useState<TTSData | null>(null);
   const [assetsData, setAssetsData] = useState<AssetsData | null>(null);
-  
+
   // Render state for manual mode step 5
   const [renderLoading, setRenderLoading] = useState(false);
   const [renderSessionId, setRenderSessionId] = useState<string | null>(null);
@@ -471,25 +471,37 @@ function App() {
               <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
                   <Brain className="w-5 h-5 text-purple-400" />
-                  <span className="text-sm font-medium text-gray-300">Script</span>
+                  <span className="text-sm font-medium text-gray-300">
+                    Script
+                  </span>
                 </div>
-                <p className="text-2xl font-bold text-white">{generatedScript?.segments.length || 0}</p>
+                <p className="text-2xl font-bold text-white">
+                  {generatedScript?.segments.length || 0}
+                </p>
                 <p className="text-xs text-gray-500">segment</p>
               </div>
               <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
                   <Mic className="w-5 h-5 text-blue-400" />
-                  <span className="text-sm font-medium text-gray-300">Audio</span>
+                  <span className="text-sm font-medium text-gray-300">
+                    Audio
+                  </span>
                 </div>
-                <p className="text-2xl font-bold text-white">{audioData?.segments?.length || 0}</p>
+                <p className="text-2xl font-bold text-white">
+                  {audioData?.segments?.length || 0}
+                </p>
                 <p className="text-xs text-gray-500">audio files</p>
               </div>
               <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
                   <Video className="w-5 h-5 text-yellow-400" />
-                  <span className="text-sm font-medium text-gray-300">Assets</span>
+                  <span className="text-sm font-medium text-gray-300">
+                    Assets
+                  </span>
                 </div>
-                <p className="text-2xl font-bold text-white">{assetsData?.assets?.filter(a => a?.exists).length || 0}</p>
+                <p className="text-2xl font-bold text-white">
+                  {assetsData?.assets?.filter((a) => a?.exists).length || 0}
+                </p>
                 <p className="text-xs text-gray-500">video clips</p>
               </div>
             </div>
@@ -498,11 +510,15 @@ function App() {
             {renderLoading && (
               <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-blue-300">Rendering...</span>
-                  <span className="text-sm text-blue-400">{renderProgress}%</span>
+                  <span className="text-sm font-medium text-blue-300">
+                    Rendering...
+                  </span>
+                  <span className="text-sm text-blue-400">
+                    {renderProgress}%
+                  </span>
                 </div>
                 <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-blue-500 transition-all duration-300"
                     style={{ width: `${renderProgress}%` }}
                   />
@@ -523,13 +539,14 @@ function App() {
               <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle className="w-5 h-5 text-green-400" />
-                  <span className="text-sm font-medium text-green-300">Video berhasil di-render!</span>
+                  <span className="text-sm font-medium text-green-300">
+                    Video berhasil di-render!
+                  </span>
                 </div>
                 <p className="text-xs text-gray-400">{renderOutput}</p>
                 <button
                   onClick={() => setViewMode("outputs")}
-                  className="mt-3 px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors text-sm"
-                >
+                  className="mt-3 px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors text-sm">
                   Lihat di Outputs
                 </button>
               </div>
@@ -541,28 +558,30 @@ function App() {
                 <button
                   onClick={async () => {
                     if (!generatedScript || !audioData || !assetsData) return;
-                    
+
                     setRenderLoading(true);
                     setRenderError(null);
                     setRenderProgress(0);
                     setRenderMessage("Starting render...");
-                    
+
                     try {
                       // Prepare audio paths
-                      const audioPaths = audioData.segments
-                        ?.filter(s => s.exists)
-                        .map(s => s.file_path) || [];
-                      
+                      const audioPaths =
+                        audioData.segments
+                          ?.filter((s) => s.exists)
+                          .map((s) => s.file_path) || [];
+
                       // Prepare asset paths
-                      const assetPaths = assetsData.assets
-                        ?.filter(a => a?.exists)
-                        .map(a => a!.file_path) || [];
-                      
+                      const assetPaths =
+                        assetsData.assets
+                          ?.filter((a) => a?.exists)
+                          .map((a) => a!.file_path) || [];
+
                       // Start render
                       const res = await renderVideo(
                         {
                           title: generatedScript.title || "Manual Video",
-                          segments: generatedScript.segments.map(s => ({
+                          segments: generatedScript.segments.map((s) => ({
                             text: s.text,
                             visual_keyword: s.visual_keyword,
                             duration_estimate: s.duration_estimate,
@@ -571,13 +590,13 @@ function App() {
                           metadata: generatedScript.metadata,
                         },
                         audioPaths,
-                        assetPaths
+                        assetPaths,
                       );
-                      
+
                       if (res.status === "ok" && res.data) {
                         const sessionId = res.data.session_id;
                         setRenderSessionId(sessionId);
-                        
+
                         // Poll for progress
                         const pollInterval = setInterval(async () => {
                           try {
@@ -585,11 +604,13 @@ function App() {
                             if (status.data) {
                               setRenderProgress(status.data.progress);
                               setRenderMessage(status.data.message);
-                              
+
                               if (status.data.status === "completed") {
                                 clearInterval(pollInterval);
                                 setRenderLoading(false);
-                                setRenderOutput(status.data.output || "Video rendered!");
+                                setRenderOutput(
+                                  status.data.output || "Video rendered!",
+                                );
                               } else if (status.data.status === "error") {
                                 clearInterval(pollInterval);
                                 setRenderLoading(false);
@@ -608,19 +629,28 @@ function App() {
                       }
                     } catch (err) {
                       setRenderLoading(false);
-                      setRenderError(err instanceof Error ? err.message : "Render failed");
+                      setRenderError(
+                        err instanceof Error ? err.message : "Render failed",
+                      );
                     }
                   }}
-                  disabled={renderLoading || !generatedScript || !audioData || !assetsData}
-                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-green-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                  disabled={
+                    renderLoading ||
+                    !generatedScript ||
+                    !audioData ||
+                    !assetsData
+                  }
+                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-green-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                   <Rocket className="w-5 h-5 inline mr-2" />
                   {renderLoading ? "Rendering..." : "Render Video Final"}
                 </button>
                 <p className="text-xs text-gray-500 mt-2">
-                  Video akan di-render menggunakan {generatedScript?.segments.length || 0} segment script,{" "}
-                  {audioData?.segments?.filter(s => s.exists).length || 0} audio, dan{" "}
-                  {assetsData?.assets?.filter(a => a?.exists).length || 0} video clips
+                  Video akan di-render menggunakan{" "}
+                  {generatedScript?.segments.length || 0} segment script,{" "}
+                  {audioData?.segments?.filter((s) => s.exists).length || 0}{" "}
+                  audio, dan{" "}
+                  {assetsData?.assets?.filter((a) => a?.exists).length || 0}{" "}
+                  video clips
                 </p>
               </div>
             )}
