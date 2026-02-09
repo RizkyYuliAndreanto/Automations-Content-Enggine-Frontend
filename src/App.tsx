@@ -28,7 +28,7 @@ import {
   OutputsPanel,
 } from "./components/features";
 import type { RawContent, VideoScript, TTSData, AssetsData } from "./types";
-import { getHealth } from "./api";
+import { getHealth, renderVideo, getPipelineStatus } from "./api";
 
 type ViewMode = "home" | "quick" | "manual" | "outputs" | "settings";
 type ManualStep = 1 | 2 | 3 | 4 | 5;
@@ -84,6 +84,14 @@ function App() {
   );
   const [audioData, setAudioData] = useState<TTSData | null>(null);
   const [assetsData, setAssetsData] = useState<AssetsData | null>(null);
+  
+  // Render state for manual mode step 5
+  const [renderLoading, setRenderLoading] = useState(false);
+  const [renderSessionId, setRenderSessionId] = useState<string | null>(null);
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [renderMessage, setRenderMessage] = useState("");
+  const [renderOutput, setRenderOutput] = useState<string | null>(null);
+  const [renderError, setRenderError] = useState<string | null>(null);
 
   // Check system health on mount
   useEffect(() => {
@@ -120,7 +128,7 @@ function App() {
       case 3:
         return !!generatedScript;
       case 4:
-        return !!generatedScript;
+        return !!generatedScript && !!audioData; // Require audio to proceed to assets
       case 5:
         return !!audioData && !!assetsData;
       default:
@@ -457,21 +465,165 @@ function App() {
           />
         )}
         {manualStep === 5 && (
-          <div className="text-center py-8">
-            <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-green-300 mb-2">
-              Semua Data Siap!
-            </h3>
-            <p className="text-gray-400 mb-6">
-              Audio dan Assets sudah di-generate. Gunakan Quick Start untuk
-              render video final.
-            </p>
-            <button
-              onClick={() => setViewMode("quick")}
-              className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-green-500/25 transition-all">
-              <Rocket className="w-5 h-5 inline mr-2" />
-              Render Video Final
-            </button>
+          <div className="space-y-6">
+            {/* Summary Section */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <Brain className="w-5 h-5 text-purple-400" />
+                  <span className="text-sm font-medium text-gray-300">Script</span>
+                </div>
+                <p className="text-2xl font-bold text-white">{generatedScript?.segments.length || 0}</p>
+                <p className="text-xs text-gray-500">segment</p>
+              </div>
+              <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <Mic className="w-5 h-5 text-blue-400" />
+                  <span className="text-sm font-medium text-gray-300">Audio</span>
+                </div>
+                <p className="text-2xl font-bold text-white">{audioData?.segments?.length || 0}</p>
+                <p className="text-xs text-gray-500">audio files</p>
+              </div>
+              <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <Video className="w-5 h-5 text-yellow-400" />
+                  <span className="text-sm font-medium text-gray-300">Assets</span>
+                </div>
+                <p className="text-2xl font-bold text-white">{assetsData?.assets?.filter(a => a?.exists).length || 0}</p>
+                <p className="text-xs text-gray-500">video clips</p>
+              </div>
+            </div>
+
+            {/* Render Progress */}
+            {renderLoading && (
+              <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-300">Rendering...</span>
+                  <span className="text-sm text-blue-400">{renderProgress}%</span>
+                </div>
+                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-300"
+                    style={{ width: `${renderProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-2">{renderMessage}</p>
+              </div>
+            )}
+
+            {/* Render Error */}
+            {renderError && (
+              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400">
+                {renderError}
+              </div>
+            )}
+
+            {/* Render Success */}
+            {renderOutput && (
+              <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <span className="text-sm font-medium text-green-300">Video berhasil di-render!</span>
+                </div>
+                <p className="text-xs text-gray-400">{renderOutput}</p>
+                <button
+                  onClick={() => setViewMode("outputs")}
+                  className="mt-3 px-4 py-2 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors text-sm"
+                >
+                  Lihat di Outputs
+                </button>
+              </div>
+            )}
+
+            {/* Render Button */}
+            {!renderOutput && (
+              <div className="text-center">
+                <button
+                  onClick={async () => {
+                    if (!generatedScript || !audioData || !assetsData) return;
+                    
+                    setRenderLoading(true);
+                    setRenderError(null);
+                    setRenderProgress(0);
+                    setRenderMessage("Starting render...");
+                    
+                    try {
+                      // Prepare audio paths
+                      const audioPaths = audioData.segments
+                        ?.filter(s => s.exists)
+                        .map(s => s.file_path) || [];
+                      
+                      // Prepare asset paths
+                      const assetPaths = assetsData.assets
+                        ?.filter(a => a?.exists)
+                        .map(a => a!.file_path) || [];
+                      
+                      // Start render
+                      const res = await renderVideo(
+                        {
+                          title: generatedScript.title || "Manual Video",
+                          segments: generatedScript.segments.map(s => ({
+                            text: s.text,
+                            visual_keyword: s.visual_keyword,
+                            duration_estimate: s.duration_estimate,
+                          })),
+                          total_duration: generatedScript.total_duration,
+                          metadata: generatedScript.metadata,
+                        },
+                        audioPaths,
+                        assetPaths
+                      );
+                      
+                      if (res.status === "ok" && res.data) {
+                        const sessionId = res.data.session_id;
+                        setRenderSessionId(sessionId);
+                        
+                        // Poll for progress
+                        const pollInterval = setInterval(async () => {
+                          try {
+                            const status = await getPipelineStatus(sessionId);
+                            if (status.data) {
+                              setRenderProgress(status.data.progress);
+                              setRenderMessage(status.data.message);
+                              
+                              if (status.data.status === "completed") {
+                                clearInterval(pollInterval);
+                                setRenderLoading(false);
+                                setRenderOutput(status.data.output || "Video rendered!");
+                              } else if (status.data.status === "error") {
+                                clearInterval(pollInterval);
+                                setRenderLoading(false);
+                                setRenderError(status.data.message);
+                              }
+                            }
+                          } catch {
+                            clearInterval(pollInterval);
+                            setRenderLoading(false);
+                            setRenderError("Failed to get render status");
+                          }
+                        }, 2000);
+                      } else {
+                        setRenderLoading(false);
+                        setRenderError(res.message);
+                      }
+                    } catch (err) {
+                      setRenderLoading(false);
+                      setRenderError(err instanceof Error ? err.message : "Render failed");
+                    }
+                  }}
+                  disabled={renderLoading || !generatedScript || !audioData || !assetsData}
+                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-green-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Rocket className="w-5 h-5 inline mr-2" />
+                  {renderLoading ? "Rendering..." : "Render Video Final"}
+                </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  Video akan di-render menggunakan {generatedScript?.segments.length || 0} segment script,{" "}
+                  {audioData?.segments?.filter(s => s.exists).length || 0} audio, dan{" "}
+                  {assetsData?.assets?.filter(a => a?.exists).length || 0} video clips
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

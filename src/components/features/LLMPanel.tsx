@@ -5,8 +5,9 @@ import {
   HelpCircle,
   CheckCircle,
   Sparkles,
+  Edit3,
 } from "lucide-react";
-import { Card, Button, TextArea, Badge, StatusIndicator } from "../ui";
+import { Card, Button, TextArea, Badge, StatusIndicator, Input } from "../ui";
 import { getLLMStatus, generateScript } from "../../api";
 import type { VideoScript, RawContent } from "../../types";
 
@@ -24,6 +25,23 @@ export function LLMPanel({ inputContent, onScriptGenerated }: LLMPanelProps) {
   const [title, setTitle] = useState("");
   const [script, setScript] = useState<VideoScript | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Update a segment field
+  const updateSegment = (index: number, field: 'text' | 'visual_keyword' | 'duration_estimate', value: string | number) => {
+    if (!script) return;
+    const updatedSegments = [...script.segments];
+    updatedSegments[index] = {
+      ...updatedSegments[index],
+      [field]: field === 'duration_estimate' ? Number(value) : value,
+    };
+    const updatedScript: VideoScript = {
+      ...script,
+      segments: updatedSegments,
+      total_duration: updatedSegments.reduce((sum, s) => sum + s.duration_estimate, 0),
+    };
+    setScript(updatedScript);
+    onScriptGenerated?.(updatedScript);
+  };
 
   const checkStatus = async () => {
     setStatusLoading(true);
@@ -210,18 +228,38 @@ export function LLMPanel({ inputContent, onScriptGenerated }: LLMPanelProps) {
                       <span className="text-xs font-medium text-purple-400 bg-purple-500/20 px-2 py-0.5 rounded">
                         Segment {i + 1}
                       </span>
-                      <div className="flex gap-2">
-                        <Badge variant="default" size="sm">
-                          🎬 {seg.visual_keyword}
-                        </Badge>
-                        <Badge variant="info" size="sm">
-                          ⏱️ {seg.duration_estimate.toFixed(1)}s
-                        </Badge>
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          value={seg.visual_keyword}
+                          onChange={(e) => updateSegment(i, 'visual_keyword', e.target.value)}
+                          className="w-32 text-xs"
+                          placeholder="Visual keyword"
+                        />
+                        <Input
+                          type="number"
+                          value={seg.duration_estimate}
+                          onChange={(e) => updateSegment(i, 'duration_estimate', e.target.value)}
+                          className="w-16 text-xs"
+                          min={1}
+                          step={0.5}
+                        />
+                        <span className="text-xs text-gray-400">detik</span>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-300">{seg.text}</p>
+                    <TextArea
+                      value={seg.text}
+                      onChange={(e) => updateSegment(i, 'text', e.target.value)}
+                      rows={2}
+                      className="text-sm"
+                      placeholder="Teks narasi untuk segment ini..."
+                    />
                   </div>
                 ))}
+              </div>
+
+              <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs text-yellow-300">
+                <Edit3 className="w-3 h-3 inline mr-1" />
+                Anda dapat langsung edit teks, visual keyword, dan durasi setiap segment di atas.
               </div>
             </div>
           )}

@@ -14,9 +14,16 @@ import type {
 
 const API_BASE = "/api";
 
+// Default axios instance for quick operations
 const api = axios.create({
   baseURL: API_BASE,
-  timeout: 120000, // 2 minutes for long operations
+  timeout: 30000, // 30 seconds for normal operations
+});
+
+// Long-running operations (LLM, TTS, Assets) need more time
+const apiLong = axios.create({
+  baseURL: API_BASE,
+  timeout: 300000, // 5 minutes for long operations
 });
 
 // === Health & Config ===
@@ -37,7 +44,7 @@ export const mineContent = async (
   topic: string = "random",
   source: string = "wikipedia",
 ): Promise<StatusResponse<RawContent>> => {
-  const { data } = await api.post("/scraper/mine", { topic, source });
+  const { data } = await apiLong.post("/scraper/mine", { topic, source });
   return data;
 };
 
@@ -70,7 +77,7 @@ export const generateScript = async (
   raw_text: string,
   title: string = "Untitled",
 ): Promise<StatusResponse<VideoScript>> => {
-  const { data } = await api.post("/llm/generate", { raw_text, title });
+  const { data } = await apiLong.post("/llm/generate", { raw_text, title });
   return data;
 };
 
@@ -99,7 +106,7 @@ export const generateAudio = async (
   texts: string[],
   session_id?: string,
 ): Promise<StatusResponse<TTSData>> => {
-  const { data } = await api.post("/tts/generate", { texts, session_id });
+  const { data } = await apiLong.post("/tts/generate", { texts, session_id });
   return data;
 };
 
@@ -132,6 +139,14 @@ export const searchAssets = async (
     keyword: string;
     source: string;
     metadata: Record<string, unknown>;
+    preview?: {
+      title: string;
+      url: string;
+      thumbnail: string;
+      duration: number;
+      width: number;
+      height: number;
+    };
   }>
 > => {
   const { data } = await api.get("/assets/search", {
@@ -144,7 +159,27 @@ export const fetchAssets = async (
   keywords: string[],
   session_id?: string,
 ): Promise<StatusResponse<AssetsData>> => {
-  const { data } = await api.post("/assets/fetch", { keywords, session_id });
+  const { data } = await apiLong.post("/assets/fetch", { keywords, session_id });
+  return data;
+};
+
+export const downloadSingleAsset = async (
+  keyword: string,
+  source: string = "pexels",
+  session_id?: string,
+): Promise<StatusResponse<{
+  keyword: string;
+  source: string;
+  asset: {
+    path: string;
+    source: string;
+    original_url: string;
+    duration: number;
+  };
+}>> => {
+  const { data } = await apiLong.post("/assets/download-single", null, {
+    params: { keyword, source, session_id },
+  });
   return data;
 };
 
@@ -160,6 +195,30 @@ export const getEditorPreview = async (): Promise<
   }>
 > => {
   const { data } = await api.get("/editor/preview");
+  return data;
+};
+
+export const renderVideo = async (
+  script: {
+    title: string;
+    segments: Array<{
+      text: string;
+      visual_keyword: string;
+      duration_estimate: number;
+    }>;
+    total_duration: number;
+    metadata?: Record<string, unknown>;
+  },
+  audio_paths: string[],
+  asset_paths: string[],
+  session_id?: string,
+): Promise<StatusResponse<{ session_id: string }>> => {
+  const { data } = await apiLong.post("/editor/render", {
+    script,
+    audio_paths,
+    asset_paths,
+    session_id,
+  });
   return data;
 };
 
